@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { Moon, Sun, Mic, MicOff, Copy, Play, Download, Trash2 } from 'lucide-react';
+import { Moon, Sun, Mic, MicOff, Copy, Play, Download, Trash2, ListRestart } from 'lucide-react';
 
 function CodeGenerator() {
   const [darkMode, setDarkMode] = useState(false);
@@ -16,7 +16,7 @@ function CodeGenerator() {
 
   const [gen,setGen] = useState(false)
 
-  useEffect(() => {
+  const listenerActivation = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -64,8 +64,13 @@ function CodeGenerator() {
       }
       clearTimeout(timeoutRef.current);
     };
-  }, [setGen,gen]);
+  }
 
+  useEffect(() => {
+    listenerActivation()
+  }, [setGen,gen,listenerActivation]);
+
+  
   useEffect(()=>{
     handleSubmit()
   },[gen])
@@ -76,15 +81,15 @@ function CodeGenerator() {
       document.body.classList.remove('dark-mode');
     }
   }, [darkMode]);
-
+  
   const toggleDarkMode = () => setDarkMode(!darkMode);
-
+  
   const toggleListening = () => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser');
       return;
     }
-
+    
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -99,6 +104,7 @@ function CodeGenerator() {
           }, 5000);
         }).catch((err) => {
           alert('Microphone access denied or not available.');
+          listenerActivation()
           console.error('getUserMedia error:', err);
         });
       } catch (error) {
@@ -106,6 +112,37 @@ function CodeGenerator() {
       }
     }
   };
+
+  const [btn,setBtn] = useState(false)
+  const [started,setStarted] = useState(false)
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      console.log('Key pressed:', event.key);
+      
+      // Example: Trigger something on Enter
+      if (event.key === 'Control') {
+        if(!started){
+          setStarted(!started)
+        }
+        const t = !btn
+        console.log(btn)
+        setBtn(t)
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [setBtn,btn,started,setStarted]);
+
+  useEffect(()=>{
+    if(started){
+      toggleListening()
+    }
+  },[btn,started])
 
   const handleSubmit = async (e=null) => {
     if(e != null){
