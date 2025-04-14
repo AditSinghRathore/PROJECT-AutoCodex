@@ -14,6 +14,8 @@ function CodeGenerator() {
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
 
+  const [gen,setGen] = useState(false)
+
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -38,10 +40,13 @@ function CodeGenerator() {
           setTranscript(finalTranscript.trim());
           setInstruction(finalTranscript.trim());
         }
+        const t = !gen
+        console.log(t)
+        setGen(t)
       };
 
       recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('Speech recognition error:', event.error,event);
         setIsListening(false);
       };
 
@@ -59,8 +64,11 @@ function CodeGenerator() {
       }
       clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [setGen,gen]);
 
+  useEffect(()=>{
+    handleSubmit()
+  },[gen])
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add('dark-mode');
@@ -99,14 +107,16 @@ function CodeGenerator() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e=null) => {
+    if(e != null){
+      e.preventDefault()
+    }
     if (!instruction.trim() || isProcessing) return;
 
     setIsProcessing(true);
 
     try {
-      const response = await fetch('/api/generate-code', {
+      const response = await fetch('http://localhost:5000/api/generate-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ instruction, previousCode: generatedCode })
@@ -150,7 +160,7 @@ function CodeGenerator() {
   const runCode = async () => {
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/run-code', {
+      const response = await fetch('http://localhost:5000/api/run-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: generatedCode })
